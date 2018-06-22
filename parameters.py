@@ -1,11 +1,8 @@
 import redis
 JOB_QUEUE_PREFIX 	= 	'jqueue_service_'
 broker_protocol		= 	'pyamqp'
-#broker_username 	= 	'guest'
 broker_username 	= 	'admin'
-#broker_password 	= 	''
 broker_password 	= 	'mypass'
-#broker_server		=	'192.168.253.1'
 broker_server		=	'rabbit'
 broker_port 		= 	5672
 
@@ -16,8 +13,9 @@ def broker():
 	broker 	= 	broker + '@' + broker_server + ':' + str(broker_port) + '//'
 	return broker
 
+
+# Redis Backend configuration 
 backend_protocol 			= 	'redis'
-#backend_server	 			=	'192.168.253.1'
 backend_server	 			=	'redis'
 backend_port     			=	6379
 backend_db		 			=	0
@@ -36,15 +34,10 @@ def backend(db):
 	return backend
 
 
-#from datadog import DogStatsd
 
-#STASTD_SERVER 	= '192.168.253.1'
+# Prometheus exporer configuration
 STATSD_SERVER 	= 'statsd'
 STATSD_PORT		= 9125
-
-
-#statsd = DogStatsd(host=STATSD_SERVER, port=STATSD_PORT)
-
 STATSD_OPTIONS = {
     'api_key':'jqueuer_api_key',
     'app_key':'jqueuer_app_key',
@@ -53,7 +46,5 @@ STATSD_OPTIONS = {
 }
 
 from datadog import initialize
-
 initialize(**STATSD_OPTIONS)
-
 from datadog import statsd

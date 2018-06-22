@@ -5,6 +5,7 @@ from parameters import JOB_QUEUE_PREFIX
 import parameters as _params
 
 def init(service_name):
+	# Job Operations initialization
 	job_app = Celery('job_app',
 		broker	= 	_params.broker() ,
 		backend	=	_params.backend(1),

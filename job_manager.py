@@ -36,13 +36,19 @@ def init_job_manager():
 job_manager_app = init_job_manager()
 
 def start_job_manager():
-	print("I'm starting the Job Manager")
+	# Initializing the job manager app
 	job_manager_app = init_job_manager()
+
+	# creating the worker with the job manager app
 	job_manager_worker = worker.worker(app=job_manager_app)
+
+	# Creating the options
 	job_manager_options = {
 		'hostname'	: "job_manager",
 		'queues'	: [job_manager_queue_name],
 		'loglevel': 'INFO',
 		'traceback': True,
 	}
+
+	# Launching the worker
 	job_manager_worker.run(**job_manager_options)

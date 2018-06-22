@@ -1,7 +1,7 @@
-from pprint import pprint
 import shlex, subprocess, json
 
 def create(image_url, service_name, replicas, stop_grace_period, reserve_memory, reserve_cpu):
+	# Create a service
 	output = ""
 	try:
 		output = subprocess.check_output(
@@ -12,8 +12,10 @@ def create(image_url, service_name, replicas, stop_grace_period, reserve_memory,
 			'--stop-grace-period', stop_grace_period,
 			'--reserve-memory', reserve_memory,
 			'--reserve-cpu', reserve_cpu,
-			'--log-driver syslog',
-			'--log-opt syslog-address=udp://127.0.0.1:7514', 
+			'--log-driver', 'syslog',
+			'--log-opt', 'syslog-address=udp://127.0.0.1:7514',
+			'--rollback-parallelism', "1",
+			'--update-parallelism', "1", 
 			image_url
 			]
 		)
@@ -24,6 +26,7 @@ def create(image_url, service_name, replicas, stop_grace_period, reserve_memory,
 	return output
 
 def remove(service_name):
+	# Remove a service
 	output = ""
 	try:
 		output = subprocess.check_output(['docker','service', 'rm', service_name])
@@ -33,6 +36,7 @@ def remove(service_name):
 	return output
 
 def scale(service_name, replicas):
+	# Scale a service
 	output = ""
 	try:
 		output = subprocess.check_output(['docker','service', 'scale', service_name + '=' + str(replicas)])
@@ -42,6 +46,7 @@ def scale(service_name, replicas):
 	return output
 
 def replicas():
+	# Get replicas info for all services
 	output = ""
 	try:
 		output = subprocess.check_output(['docker','service', 'ls', '-q'])
@@ -57,10 +62,11 @@ def replicas():
 			
 	except Exception as e:
 		pass
-	#print(output)
+	print(output)
 	return replicas_list
 
 def replicas(service_name):
+	# Get replicas info for one service
 	output = ""
 	result = 0
 	try:
@@ -73,7 +79,3 @@ def replicas(service_name):
 	except Exception as e:
 		pass
 	return result
-
-#create('osabuoun/python_echo_app', 'test_name' , 3)
-#print(scale('test_name',6))
-#print(replicas('test_name1'))

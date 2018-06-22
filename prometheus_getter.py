@@ -1,6 +1,5 @@
 import time, sys
 import requests
-from pprint import pprint
 
 url = ""
 worker_queries = [
@@ -12,22 +11,22 @@ queries = [
 	{'var': "jqueuer_task_running_count", 				'query_str': "sum(jqueuer_task_running)+by+(experiment_id,service_name)" },
 	{'var': "jqueuer_task_started_count", 				'query_str': "sum(jqueuer_task_started)+by+(experiment_id,service_name)" },
 	{'var': "jqueuer_task_accomplished_count", 			'query_str': "count(jqueuer_task_accomplished)+by+(experiment_id,service_name)" },
-	{'var': "jqueuer_task_accomplished_latency", 		'query_str': "avg(jqueuer_task_accomplished_latency)+by+(experiment_id,service_name)" },
-	{'var': "jqueuer_task_accomplished_latency_count", 	'query_str': "sum(jqueuer_task_accomplished_latency_count)+by+(experiment_id,service_name)" },
-	{'var': "jqueuer_task_accomplished_latency_sum", 	'query_str': "avg(jqueuer_task_accomplished_latency_sum)+by+(experiment_id,service_name)" },
+	{'var': "jqueuer_task_accomplished_duration", 		'query_str': "avg(jqueuer_task_accomplished_duration)+by+(experiment_id,service_name)" },
+	{'var': "jqueuer_task_accomplished_duration_count", 	'query_str': "sum(jqueuer_task_accomplished_duration_count)+by+(experiment_id,service_name)" },
+	{'var': "jqueuer_task_accomplished_duration_sum", 	'query_str': "avg(jqueuer_task_accomplished_duration_sum)+by+(experiment_id,service_name)" },
 
 	{'var': "jqueuer_job_added_count", 					'query_str': "count(jqueuer_job_added)+by+(experiment_id,service_name)" },
 	{'var': "jqueuer_job_running_count", 				'query_str': "sum(jqueuer_job_running)+by+(experiment_id,service_name)" },
 	{'var': "jqueuer_job_started_count", 				'query_str': "sum(jqueuer_job_started)+by+(experiment_id,service_name)" },
 	{'var': "jqueuer_job_accomplished_count", 			'query_str': "count(jqueuer_job_accomplished)+by+(experiment_id,service_name)" },
-	{'var': "jqueuer_job_accomplished_latency", 		'query_str': "avg(jqueuer_job_accomplished_latency)+by+(experiment_id,service_name)" },
-	{'var': "jqueuer_job_accomplished_latency_count", 	'query_str': "sum(jqueuer_job_accomplished_latency_count)+by+(experiment_id,service_name)" },
-	{'var': "jqueuer_job_accomplished_latency_sum", 	'query_str': "avg(jqueuer_job_accomplished_latency_sum)+by+(experiment_id,service_name)" },
+	{'var': "jqueuer_job_accomplished_duration", 		'query_str': "avg(jqueuer_job_accomplished_duration)+by+(experiment_id,service_name)" },
+	{'var': "jqueuer_job_accomplished_duration_count", 	'query_str': "sum(jqueuer_job_accomplished_duration_count)+by+(experiment_id,service_name)" },
+	{'var': "jqueuer_job_accomplished_duration_sum", 	'query_str': "avg(jqueuer_job_accomplished_duration_sum)+by+(experiment_id,service_name)" },
 
 	{'var': "jqueuer_job_failed_count", 				'query_str': "count(jqueuer_job_failed)+by+(experiment_id,service_name)" },
-	{'var': "jqueuer_job_failed_latency", 				'query_str': "avg(jqueuer_job_failed_latency)+by+(experiment_id,service_name)" },
-	{'var': "jqueuer_job_failed_latency_count", 		'query_str': "sum(jqueuer_job_failed_latency_count)+by+(experiment_id,service_name)" },
-	{'var': "jqueuer_job_failed_latency_sum", 			'query_str': "avg(jqueuer_job_failed_latency_sum)+by+(experiment_id,service_name)" },
+	{'var': "jqueuer_job_failed_duration", 				'query_str': "avg(jqueuer_job_failed_duration)+by+(experiment_id,service_name)" },
+	{'var': "jqueuer_job_failed_duration_count", 		'query_str': "sum(jqueuer_job_failed_duration_count)+by+(experiment_id,service_name)" },
+	{'var': "jqueuer_job_failed_duration_sum", 			'query_str': "avg(jqueuer_job_failed_duration_sum)+by+(experiment_id,service_name)" },
 	]
 
 def get(query):
@@ -40,8 +39,9 @@ def get(query):
 def start(prometheus_protocol, prometheus_ip, prometheus_port, experiments):
 	global url
 	url = prometheus_protocol + "://" + prometheus_ip + ":" + str(prometheus_port)
-	print("URL = " + url)
 	while True:
+
+		# Looping over worker_queries
 		for query in worker_queries:
 			try:
 				resposne = get(query['query_str'])
@@ -53,33 +53,28 @@ def start(prometheus_protocol, prometheus_ip, prometheus_port, experiments):
 						service_name = result['metric']['service_name']
 						for experiment_id in experiments:
 							try:
+								# Updating the experiment
 								experiments[experiment_id]['experiment'].update(query['var'], result)
 							except Exception as e:
-								print("A problem happened while updating %s worker in %s" % (query['var'] , str(experiment_id)))
 								raise e
 					except Exception as e:
-						pprint(result)
+						pass
 			except Exception as ex:
-				print("Error in " + str(query))
 				raise ex
 
+		# Looping over queries
 		for query in queries:
 			try:
-				#pprint(result)
 				resposne = get(query['query_str'])
 				experiment_id = None
 				for result in resposne['data']['result']:
 					try:
+						# Updating the experiment
 						experiment_id = result['metric']['experiment_id']
 						experiments[experiment_id]['experiment'].update(query['var'], result)
 					except Exception as e:
-						print("A problem happened while updating %s jobs/tasks in %s with result %s" % (query['var'] , experiment_id, str(result)))
-						#pprint(result)
 						raise e
 			except Exception as e:
 				pass
-				#print("Error in " + str(query))
-
 
 		time.sleep(10)
-#start("http", "178.22.69.24", 9090, None)
