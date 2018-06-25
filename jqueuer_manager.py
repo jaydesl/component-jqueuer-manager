@@ -4,11 +4,7 @@ import job_manager
 import prometheus_getter, experiment_receiver
 
 from experiment import Experiment 
-
-http_server_port	= 8081
-prometheus_protocol = 'http'
-prometheus_ip       = 'prometheus'
-prometheus_port     = 9090
+from parameters import http_server_port, prometheus_protocol, prometheus_ip, prometheus_port
 
 experiments = {}
 

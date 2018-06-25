@@ -4,12 +4,21 @@ from celery import subtask
 import monitoring, job_operations, time_decoder
 import docker_agent
 
+# Experiment Class
 class Experiment:
+	# Initialization function
+	# experiment argument is json object
 	def __init__(self, experiment_id, private_id, experiment):
+		# Reset stating time
 		self.experiment_actual_start_timestamp	= 	self.time_now()
 
+		# Assigning experiment ID
 		self.experiment_id 	= experiment_id
+
+		# Assigning the image URL from the experiment to a variable
 		self.image_url = experiment['image_url']
+
+		# Replacing non-alphabetical characters in the image URL with an underscore 
 		try:
 			self.service_name 	= self.image_url.replace("/","_").replace(":","_").replace(".","_").replace("-","_") + "__" + private_id
 			self.add_service(self.service_name)
@@ -21,12 +30,14 @@ class Experiment:
 	def time_now(self):
 		return datetime.datetime.now().timestamp()
 
+	# Add the service name to the backend (redis) database
 	def add_service(self, service_name):
 		if (backend_experiment_db.exists(service_name)):
 			return ""
 		backend_experiment_db.set(service_name, 
 			{'experiment_id':self.experiment_id})
 
+	# Initialize the counters
 	def init_counters(self):
 		self.service_replicas_running 				=	0
 		self.jqueuer_worker_count 					=	0
@@ -56,6 +67,7 @@ class Experiment:
 		self.reserve_memory							=	0
 		self.reserve_cpu							=	0
 
+	# update the counter with the values received from prometheus
 	def update(self, query_var, result):
 		if (result['value'][1] == "NaN"):
 			return
@@ -98,6 +110,7 @@ class Experiment:
 			if (result['metric']['service_name'] == self.service_name):
 				self.jqueuer_worker_count = int(result['value'][1])
 
+	# decide whether the jobs are stored in a list or an array
 	def process_jobs(self):
 		if (isinstance(self.experiment['jobs'], list)):
 			self.process_job_list()
@@ -105,6 +118,7 @@ class Experiment:
 			self.process_job_array()
 		self.task_per_job_avg = math.ceil(self.jqueuer_task_added_count / self.jqueuer_job_added_count)
 
+	# Get task count 
 	def get_task_count(self, tasks):
 		count = 0
 		try:
@@ -116,6 +130,7 @@ class Experiment:
 			count = 0
 		return count 
 
+	# process all jobs in the list 
 	def process_job_list(self):
 		for job in self.experiment['jobs']:
 			try:
@@ -129,6 +144,7 @@ class Experiment:
 
 			self.add_job(job)
 
+	# process job array
 	def process_job_array(self):
 		jobs = self.experiment['jobs']
 		try:
@@ -144,11 +160,7 @@ class Experiment:
 			job_id = jobs['id'] + "_" + str(x)
 			self.add_job(jobs, job_id)
 
-	def add_tasks(self, tasks, job_id):
-		for task in tasks:
-			self.jqueuer_task_added_count += 1
-			monitoring.add_task(self.experiment_id, self.service_name, job_id, task['id'])
-
+	# Add a job (and its tasks) to the queue and update the monitoring counters
 	def add_job(self, job, job_id = None):
 		if (not job_id):
 			job_id = job["id"]
@@ -163,23 +175,30 @@ class Experiment:
 		chain = subtask('job_operations.add', queue = JOB_QUEUE_PREFIX + self.service_name)
 		chain.delay(self.experiment_id, job_queue_id, job)
 
+	# Count the tasks in a job and update the counters
+	def add_tasks(self, tasks, job_id):
+		for task in tasks:
+			self.jqueuer_task_added_count += 1
+			monitoring.add_task(self.experiment_id, self.service_name, job_id, task['id'])
+
+	# Update experiment parameters 	
 	def update_params(self):
-		self.deadline				=	time_decoder.get_seconds(self.experiment['experiment_deadline'])
+		self.deadline							=	time_decoder.get_seconds(self.experiment['experiment_deadline'])
 
 		self.experiment_deadline_timestamp		= 	self.experiment_actual_start_timestamp + self.deadline
 		monitoring.experiment_deadline_timestamp(self.experiment_id, self.service_name, self.experiment_deadline_timestamp)
 
-		self.service_replicas_min = int(self.experiment['replica_min'])
+		self.service_replicas_min 				= int(self.experiment['replica_min'])
 		monitoring.service_replicas_min(self.experiment_id, self.service_name, self.service_replicas_min)
 
-		self.service_replicas_max = int(self.experiment['replica_max'])
+		self.service_replicas_max 				= int(self.experiment['replica_max'])
 		monitoring.service_replicas_max(self.experiment_id, self.service_name, self.service_replicas_max)
 
-		self.single_task_duration	=	time_decoder.get_seconds(self.experiment['single_task_duration'])
+		self.single_task_duration				=	time_decoder.get_seconds(self.experiment['single_task_duration'])
 		monitoring.single_task_duration(self.experiment_id, self.service_name, self.single_task_duration)
 
-		self.reserve_memory = self.experiment['reserve_memory']
-		self.reserve_cpu 	= self.experiment['reserve_cpu']
+		self.reserve_memory 					= self.experiment['reserve_memory']
+		self.reserve_cpu 						= self.experiment['reserve_cpu']
 
 	def update_service_replicas_running(self):
 		self.service_replicas_running = docker_agent.replicas(self.service_name)

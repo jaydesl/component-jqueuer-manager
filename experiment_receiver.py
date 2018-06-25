@@ -5,8 +5,8 @@ from threading import Thread
 
 from experiment import Experiment
 
+# Add an experiment
 def add_experiment(experiment_json):
-	# Add an experiment
 	private_id = str(int(round(time.time() * 1000))) + "_" + str(random.randrange(100, 999))
 	experiment_id = "exp_" + private_id
 
@@ -17,8 +17,8 @@ def add_experiment(experiment_json):
 	experiments[experiment_id] = {'experiment': experiment, 'thread': experiment_thread}
 	return str(experiment_id) + " has been added & started successfully ! \n"
 
+# Delete an experiment
 def del_experiment(experiment_json):
-	# Delete an experiment
 	customer_service_name = experiment_json['service_name']
 	if (backend_experiment_db.exists(customer_service_name)):
 		backend_experiment_db.delete(customer_service_name)

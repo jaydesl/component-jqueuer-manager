@@ -1,5 +1,15 @@
-import redis
+# Experiment receiver configuration
+http_server_port	= 8081
+
+# Prometheus configuration
+prometheus_protocol = 'http'
+prometheus_ip       = 'prometheus'
+prometheus_port     = 9090
+
+# Job Queue Prefix
 JOB_QUEUE_PREFIX 	= 	'jqueue_service_'
+
+# Backend configuration - Rabbitmq
 broker_protocol		= 	'pyamqp'
 broker_username 	= 	'admin'
 broker_password 	= 	'mypass'
@@ -15,6 +25,7 @@ def broker():
 
 
 # Redis Backend configuration 
+import redis
 backend_protocol 			= 	'redis'
 backend_server	 			=	'redis'
 backend_port     			=	6379

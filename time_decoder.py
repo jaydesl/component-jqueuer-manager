@@ -1,3 +1,5 @@
+# Time string parser
+# It parses the values in the experiment file (ex. JSON) and returns the values in seconds.
 import sys 
 
 def seconds(value):
@@ -12,6 +14,7 @@ def hours(value):
 def days(value):
 	return value * 60 * 60 * 24
 
+# This is the main function which can be used to convert a simple number of (day, hour or second) to seconds
 def get_seconds(text):
 	result = 2147483647
 	try:

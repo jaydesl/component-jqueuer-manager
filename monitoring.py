@@ -1,3 +1,4 @@
+# Storing values in the monitoring system: prometheus using statsd
 from prometheus_client import Counter, Gauge, Histogram
 import time, sys
 from parameters import statsd

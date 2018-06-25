@@ -1,3 +1,4 @@
+# This app works all time by quering the prometheus for certain values and update the corresponding experiments
 import time, sys
 import requests
 
@@ -6,6 +7,7 @@ worker_queries = [
 	{'var': "jqueuer_worker_count", 				'query_str': "sum(jqueuer_worker_count)+by+(service_name)" },
 	]
 
+# Prometheus Queries 
 queries = [
 	{'var': "jqueuer_task_added_count", 				'query_str': "count(jqueuer_task_added)+by+(experiment_id,service_name)" },
 	{'var': "jqueuer_task_running_count", 				'query_str': "sum(jqueuer_task_running)+by+(experiment_id,service_name)" },
@@ -51,6 +53,7 @@ def start(prometheus_protocol, prometheus_ip, prometheus_port, experiments):
 				for result in resposne['data']['result']:
 					try:
 						service_name = result['metric']['service_name']
+						# looping over the experiment 
 						for experiment_id in experiments:
 							try:
 								# Updating the experiment
