@@ -200,22 +200,31 @@ class Experiment:
 		self.reserve_memory 					= self.experiment['reserve_memory']
 		self.reserve_cpu 						= self.experiment['reserve_cpu']
 
+	# Get current current number or replicas and update the corresponding variable
 	def update_service_replicas_running(self):
 		self.service_replicas_running = docker_agent.replicas(self.service_name)
 		monitoring.service_replicas_running(self.experiment_id, self.service_name, self.service_replicas_running)
 
+	# Calculate number of replicas needed to finish before the deadline 
 	def calc_replica_count(self):
+		# Update number of replicas currently running
 		self.update_service_replicas_running()
+
+		# Calculate how many jobs are still in the queue
 		jobs_queued = self.jqueuer_job_added_count - self.jqueuer_job_accomplished_count
 
+		# Calculate the remaining time 
 		remaining_time	= self.experiment_deadline_timestamp - self.time_now()
 
+		# Use the calculated average if exists
 		if (self.jqueuer_task_accomplished_duration == 0):
 			self.system_calculated_single_task_duration = self.single_task_duration
 		else:
 			self.system_calculated_single_task_duration = self.jqueuer_task_accomplished_duration
 		monitoring.single_task_duration(self.experiment_id, self.service_name, self.system_calculated_single_task_duration)
 
+
+		# Calculate number of replicas needed
 		service_replicas_needed = 0
 		if (remaining_time > 0):
 			service_replicas_needed	= 	(jobs_queued * self.system_calculated_single_task_duration * self.task_per_job_avg) / remaining_time
@@ -246,31 +255,54 @@ class Experiment:
 
 		return service_replicas_needed, remaining_time
 
+	# Create the service with the initial number of containers needed
 	def run_service(self, service_replicas_needed):
+		# The grace peiod is the time to wait before stopping a container
 		stop_grace_period = str(math.ceil(self.single_task_duration * 1.1)) + "s"
+		# Create the service
 		docker_agent.create(self.image_url, self.service_name, service_replicas_needed, stop_grace_period, self.reserve_memory,self.reserve_cpu)
 
+	# Scale up/down the service
 	def scale(self, service_replicas_needed):
 		docker_agent.scale(self.service_name, service_replicas_needed)
 
+	# Stop he service and remove all its containers
 	def remove(self):
 		docker_agent.remove(self.service_name)
 
+	# Start the experiment
+	# Process the jobs and then start the autoscaling process
 	def start(self):
 		self.init_counters()
 		self.process_jobs()
 		self.update_params()
+
+		# Initial number of containers and the remaining time until the deadline
 		service_replicas_needed, remaining_time = self.calc_replica_count()
+
+		# Start the service
 		self.run_service(service_replicas_needed)
+
+		# The index that will assure the stability of the scaling up/down
 		coherence_index = 0
+
+		# Direction of scaling: up, down or none
 		scale = 'none'
+
+		# The autoscaler will keep working until the number of job accomplished is equal to the number of job queued
 		while self.jqueuer_job_accomplished_count < self.jqueuer_job_added_count:
 			monitoring.experiment_running_timestamp(self.experiment_id, self.service_name, time.time())
+
+			# number of containers and the remaining time until the deadline
 			service_replicas_needed_new, remaining_time = self.calc_replica_count()
 			if (service_replicas_needed_new != service_replicas_needed):
+				# The new number of container is not equal to the last number
+
+				# ignore the old number of containers if the index is 0
 				if (coherence_index == 0):
 					service_replicas_needed = service_replicas_needed_new
 
+				# Check the scaling direction up, down or none
 				if (service_replicas_needed > self.service_replicas_running):
 					if (scale == 'up'):
 						coherence_index += 1
@@ -287,6 +319,9 @@ class Experiment:
 					coherence_index = 0
 					scale = 'none'
 			else:
+				# The new number of container is equal to the last number
+
+				# Check the scaling direction up, down or none
 				if (service_replicas_needed > self.service_replicas_running):
 					coherence_index += 1
 					scale = 'up'
@@ -297,13 +332,24 @@ class Experiment:
 					coherence_index = 0
 					scale = 'none'
 
+			# if the stability index is over 3 and the numbers of containers needed/running are different 
 			if ((service_replicas_needed != self.service_replicas_running) and (coherence_index > 3)):
+				# Scale up/down the service
 				self.scale(service_replicas_needed)
+
+				# Reset the index and the scale direction
 				coherence_index = 0
 				scale = 'none'
+
 			time.sleep(math.ceil(self.single_task_duration /4))
 		else:
+			# All jobs have been finished
+
+			# Update the monitoring
 			monitoring.experiment_actual_end_timestamp(self.experiment_id, self.service_name, time.time())
+			# Scale to 0
 			self.scale(0)
 			self.update_service_replicas_running()
+
+			# Remove the service
 			self.remove()
