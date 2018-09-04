@@ -1,4 +1,4 @@
-FROM python:3
+FROM python:3.6
 
 ADD requirements.txt /jqueuer_manager/requirements.txt
 ADD experiment.py /jqueuer_manager/experiment.py
@@ -14,4 +14,4 @@ RUN mkdir log
 RUN mkdir data
 RUN pip install -r requirements.txt
 RUN pip install -U "celery[redis]"
-ENTRYPOINT python3 jqueuer_manager.py 
+ENTRYPOINT python3 jqueuer_manager.py
