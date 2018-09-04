@@ -8,19 +8,20 @@ repositories:
 
 topology_template:
   node_templates:
-
     jqueuer_agent:
       type: tosca.nodes.MiCADO.Container.Application.Docker
       properties:
          environment:
            JQ_SERVER: JQUEUER_IP
-           NODE_ID: {{.Node.Hostname}}
          deploy:
            mode: global
          networks: [ 'bridge' ]
+         entrypoint: sh -c 'python3 jqueuer_agent.py $$(cat /etc/nodehostname)'
          volumes:
            - /var/run/docker.sock:/var/run/docker.sock
            - /usr/bin/docker:/usr/bin/docker
+           - /etc/hostname:/etc/nodehostname
+
       artifacts:
        image:
          type: tosca.artifacts.Deployment.Image.Container.Docker
