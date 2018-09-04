@@ -11,13 +11,17 @@ class Experiment:
 		# Reset stating time
 		self.experiment_adding_timestamp	= 	self.time_now()
 
+		# init counters ?
+		self.jqueuer_task_added_count = 0
+		self.jqueuer_job_added_count = 0
+
 		# Assigning experiment ID
 		self.experiment_id 	= experiment_id
 
 		# Assigning the image URL from the experiment to a variable
 		self.image_url = experiment['image_url']
 
-		# Replacing non-alphabetical characters in the image URL with an underscore 
+		# Replacing non-alphabetical characters in the image URL with an underscore
 		try:
 			self.service_name 	= self.image_url.replace("/","_").replace(":","_").replace(".","_").replace("-","_") + "__" + private_id
 			self.add_service(self.service_name)
@@ -33,7 +37,7 @@ class Experiment:
 	def add_service(self, service_name):
 		if (backend_experiment_db.exists(service_name)):
 			return ""
-		backend_experiment_db.set(service_name, 
+		backend_experiment_db.set(service_name,
 			{'experiment_id':self.experiment_id})
 
 	# decide whether the jobs are stored in a list or an array
@@ -44,15 +48,15 @@ class Experiment:
 			self.process_job_array()
 		self.task_per_job_avg = math.ceil(self.jqueuer_task_added_count / self.jqueuer_job_added_count)
 
-	# process all jobs in the list 
+	# process all jobs in the list
 	def process_job_list(self):
 		for job in self.experiment['jobs']:
 			try:
-				job_params = job['params'] 
+				job_params = job['params']
 			except Exception as e:
-				job['params'] = self.experiment['params'] 
+				job['params'] = self.experiment['params']
 			try:
-				job_command = job['command'] 
+				job_command = job['command']
 			except Exception as e:
 				job['command'] = self.experiment['command']
 
@@ -62,11 +66,11 @@ class Experiment:
 	def process_job_array(self):
 		jobs = self.experiment['jobs']
 		try:
-			job_params = jobs['params'] 
+			job_params = jobs['params']
 		except Exception as e:
-			jobs['params'] = self.experiment['params'] 
+			jobs['params'] = self.experiment['params']
 		try:
-			job_command = jobs['command'] 
+			job_command = jobs['command']
 		except Exception as e:
 			jobs['command'] = self.experiment['command']
 
@@ -81,7 +85,7 @@ class Experiment:
 
 		self.add_tasks(job['tasks'], job_id)
 
-		self.jqueuer_job_added_count += 1 
+		self.jqueuer_job_added_count += 1
 		monitoring.add_job(self.experiment_id, self.service_name, job_id)
 
 		job_queue_id = "j_" + self.service_name +"_" + str(int(round(time.time() * 1000))) + "_" + str(random.randrange(100, 999))
@@ -99,4 +103,3 @@ class Experiment:
 	# Process the jobs and then start the autoscaling process
 	def start(self):
 		self.process_jobs()
-		self.update_params()

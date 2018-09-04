@@ -1,7 +1,8 @@
 from http.server import BaseHTTPRequestHandler, HTTPServer
-import urllib.parse, json, time, ast, random
+import urllib.parse, urllib.request, json, time, ast, random, requests
 from pprint import pprint
 from threading import Thread
+from parameters import backend_experiment_db, micado_master_ip
 
 from experiment import Experiment
 
@@ -25,6 +26,26 @@ def del_experiment(experiment_json):
 		return "Customer Service " + customer_service_name + " has been removed from the queue" + "\n"
 	return "Customer Service " + customer_service_name + " wasn't found in the queue" + "\n"
 
+# Quick prepare tosca
+def prep_tosca(private_id):
+	service_name = "repast__" + private_id
+	server_ip = urllib.request.urlopen('https://api.ipify.org').read().decode('utf8')
+
+	with open("tosca.yaml", 'w') as newfile:
+		with open ("base-tosca.yaml") as template:
+			for line in template:
+				if 'JQUEUER_IP:9102' in line:
+					newfile.write(line.replace("JQUEUER_IP", server_ip))
+					continue
+				newfile.write(line.replace("repast__experiment", service_name))
+
+def submit_tosca():
+	url = 'http://' + micado_master_ip + ':5050/v1.0/app/launch/file/'
+	files = {'file': open('tosca.yaml','rb')}
+	data = {'id': 'osabuoun'}
+
+	r = requests.post(url, files=files, data=data)
+
 # HTTP Server Class
 class HTTP(BaseHTTPRequestHandler):
 	def _set_headers(self):
@@ -46,7 +67,7 @@ class HTTP(BaseHTTPRequestHandler):
 
 	def do_HEAD(self):
 		self._set_headers()
-		
+
 	def do_POST(self):
 		# Processing POST requests
 		content_length= None
@@ -59,7 +80,6 @@ class HTTP(BaseHTTPRequestHandler):
 			pass
 		except Exception as e:
 			print("Error in parsing the content_length and packet data")
-		data_back = ""
 
 		if (self.path == '/experiment/result'):
 
@@ -74,21 +94,23 @@ class HTTP(BaseHTTPRequestHandler):
 			data_back = "received"
 		if (self.path == '/experiment/add'):
 			data_back = add_experiment(data_json)
+			prep_tosca(data_back[4:21])
+			submit_tosca()
 		elif (self.path == '/experiment/del'):
 			data_back = del_experiment(data_json)
-		
+
 		self._set_headers()
 		self.wfile.write(bytes(str(data_back), "utf-8"))
 
 
 def start(experiments_arg, port=8081):
-	# Starting the REST API Server 
+	# Starting the REST API Server
 	global experiments
 	experiments = experiments_arg
 	server_address = ('', port)
 	httpd = HTTPServer(server_address, HTTP)
 	print('Starting Experiment Manager HTTP Server...' + str(port))
-	
+
 	try:
 		httpd.serve_forever()
 	except KeyboardInterrupt:

@@ -1,5 +1,10 @@
+import os
+
 # Experiment receiver configuration
 http_server_port	= 8081
+
+# MiCADO Master configuration
+micado_master_ip = os.getenv('MICADO_SERVER', "micado")
 
 # Prometheus configuration
 prometheus_protocol = 'http'
@@ -17,14 +22,14 @@ broker_server		=	'rabbit'
 broker_port 		= 	5672
 
 def broker():
-	broker 	= 	broker_protocol + '://' + broker_username 
+	broker 	= 	broker_protocol + '://' + broker_username
 	if (broker_password != ''):
 		broker 	= broker + ':' + broker_password
 	broker 	= 	broker + '@' + broker_server + ':' + str(broker_port) + '//'
 	return broker
 
 
-# Redis Backend configuration 
+# Redis Backend configuration
 import redis
 backend_protocol 			= 	'redis'
 backend_server	 			=	'redis'
@@ -33,13 +38,13 @@ backend_db		 			=	0
 backend_experiment_db_id	=	10
 
 backend_experiment_db = redis.StrictRedis(
-	host=backend_server, 
-	port=backend_port, 
-	db=backend_experiment_db_id, 
-	charset="utf-8", 
+	host=backend_server,
+	port=backend_port,
+	db=backend_experiment_db_id,
+	charset="utf-8",
 	decode_responses=True
 	)
- 	
+
 def backend(db):
 	backend = backend_protocol + '://' + backend_server + ':' + str(backend_port) + '/' + str(db)
 	return backend
