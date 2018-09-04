@@ -9,24 +9,6 @@ repositories:
 topology_template:
   node_templates:
 
-    jqueuer_agent:
-      type: tosca.nodes.MiCADO.Container.Application.Docker
-      properties:
-         environment:
-           JQ_SERVER: JQUEUER_IP
-           NODE_ID: {{.Node.Hostname}}
-         deploy:
-           mode: global
-         networks: [ 'bridge' ]
-         volumes:
-           - /var/run/docker.sock:/var/run/docker.sock
-           - /usr/bin/docker:/usr/bin/docker
-      artifacts:
-       image:
-         type: tosca.artifacts.Deployment.Image.Container.Docker
-         file: jaydes/jqueuer_agent:env
-         repository: docker_hub
-
     repast__experiment:
       type: tosca.nodes.MiCADO.Container.Application.Docker
       properties:

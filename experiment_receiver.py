@@ -34,7 +34,7 @@ def prep_tosca(private_id):
 	with open("tosca.yaml", 'w') as newfile:
 		with open ("base-tosca.yaml") as template:
 			for line in template:
-				if 'JQUEUER_IP:9102' in line:
+				if 'JQUEUER_IP' in line:
 					newfile.write(line.replace("JQUEUER_IP", server_ip))
 					continue
 				newfile.write(line.replace("repast__experiment", service_name))
