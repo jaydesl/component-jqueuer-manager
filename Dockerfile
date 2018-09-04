@@ -9,6 +9,7 @@ ADD jqueuer_manager.py /jqueuer_manager/jqueuer_manager.py
 ADD parameters.py /jqueuer_manager/parameters.py
 ADD monitoring.py /jqueuer_manager/monitoring.py
 ADD index.html /jqueuer_manager/index.html
+ADD base-tosca.yaml /jqueuer_manager/base-tosca.yaml
 WORKDIR /jqueuer_manager/
 RUN mkdir log
 RUN mkdir data
