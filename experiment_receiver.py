@@ -40,7 +40,7 @@ def prep_tosca(private_id):
 				newfile.write(line.replace("repast__experiment", service_name))
 
 def submit_tosca():
-	url = 'http://' + micado_master_ip + ':5050/v1.0/app/launch/file/'
+	url = 'https://admin:admin@' + micado_master_ip + ':443/toscasubmitter/v1.0/app/launch/file/'
 	files = {'file': open('tosca.yaml','rb')}
 	data = {'id': 'osabuoun'}
 
