@@ -28,11 +28,11 @@ def del_experiment(experiment_json):
 
 # Quick prepare tosca
 def prep_tosca(private_id):
-	service_name = "repast__" + private_id
+	service_name = "jq_test_slim__" + private_id
 	server_ip = urllib.request.urlopen('https://api.ipify.org').read().decode('utf8')
 
 	with open("tosca.yaml", 'w') as newfile:
-		with open ("base-tosca.yaml") as template:
+		with open ("/etc/jqueuer/tosca/jq-tosca.yaml") as template:
 			for line in template:
 				if 'JQUEUER_IP' in line:
 					newfile.write(line.replace("JQUEUER_IP", server_ip))
@@ -42,9 +42,9 @@ def prep_tosca(private_id):
 def submit_tosca():
 	url = 'https://admin:admin@' + micado_master_ip + ':443/toscasubmitter/v1.0/app/launch/file/'
 	files = {'file': open('tosca.yaml','rb')}
-	data = {'id': 'osabuoun'}
+	data = {'id': 'jaydes'}
 
-	r = requests.post(url, files=files, data=data)
+	r = requests.post(url, files=files, data=data, verify=False)
 
 # HTTP Server Class
 class HTTP(BaseHTTPRequestHandler):
