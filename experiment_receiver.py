@@ -37,6 +37,9 @@ def prep_tosca(private_id):
 				if 'JQUEUER_IP' in line:
 					newfile.write(line.replace("JQUEUER_IP", server_ip))
 					continue
+				elif 'EXPID' in line:
+					newfile.write(line.replace("EXPID", 'exp_'+private_id))
+					continue
 				newfile.write(line.replace("repast__experiment", service_name))
 
 def submit_tosca():
