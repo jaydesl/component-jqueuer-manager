@@ -8,6 +8,7 @@
 <input type="file" id="data" />
 <br>
 <button onclick="myFunction()" id="send">Add Experiment</button>
+<button onclick="delEx()" id="send">Kill Experiment</button>
 <p>-------------------------------- Response ----------------------</p>
 <pre id="response" style="width: 50%; overflow: auto; padding: 4px; margin-left: 2em; font-size: 1.1em;"></pre>
 <p>------------------------------------------------------------------</p>
@@ -30,6 +31,22 @@ function results() {
 	var win = window.open("http://jobserver.hopto.org/", '_blank');
   	win.focus();
 }
+function delEx() {
+    var element = document.getElementById('file-content');
+
+	var xhr = new XMLHttpRequest();
+	var url = "/experiment/del";
+	xhr.open("POST", url, true);
+	xhr.setRequestHeader("Content-type", "application/json");
+	xhr.onreadystatechange = function () {
+    	if (xhr.readyState === 4 && xhr.status === 200) {
+        	var response = document.getElementById('response');
+  				response.textContent = xhr.responseText + "\n";
+    	}
+	};
+	xhr.send(element.textContent);
+}
+
 function myFunction() {
     var element = document.getElementById('file-content');
 
@@ -46,7 +63,7 @@ function myFunction() {
 	//var data = JSON.stringify(element.textContent);
 	xhr.send(element.textContent);
 	var send_button = document.getElementById('send');
-	send_button.disabled = true 
+	send_button.disabled = true
 }
 
 function readSingleFile(e) {

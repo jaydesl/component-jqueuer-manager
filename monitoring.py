@@ -1,5 +1,5 @@
 # Storing values in the monitoring system: prometheus using statsd
-from prometheus_client import Counter, Gauge, Histogram
+#from prometheus_client import Counter, Gauge, Histogram
 import time, sys
 from parameters import statsd
 
@@ -57,4 +57,3 @@ def experiment_adding_timestamp(experiment_id ,service_name, experiment_adding_t
 			'service_name:%s' % service_name,
 		]
 	)
-

@@ -26,6 +26,7 @@ class Experiment:
 			self.service_name 	= self.image_url.replace("/","_").replace(":","_").replace(".","_").replace("-","_") + "__" + private_id
 			self.add_service(self.service_name)
 		except Exception as e:
+			print(e)
 			self.service_name 	= None
 		self.experiment = experiment
 		monitoring.experiment_adding_timestamp(self.experiment_id, self.service_name, self.experiment_adding_timestamp)

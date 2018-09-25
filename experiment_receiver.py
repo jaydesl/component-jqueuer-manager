@@ -2,9 +2,10 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 import urllib.parse, urllib.request, json, time, ast, random, requests
 from pprint import pprint
 from threading import Thread
-from parameters import backend_experiment_db, micado_master_ip
+from parameters import backend_experiment_db
 
 from experiment import Experiment
+import totosca.template
 
 # Add an experiment
 def add_experiment(experiment_json):
@@ -20,32 +21,38 @@ def add_experiment(experiment_json):
 
 # Delete an experiment
 def del_experiment(experiment_json):
-	customer_service_name = experiment_json['service_name']
-	if (backend_experiment_db.exists(customer_service_name)):
-		backend_experiment_db.delete(customer_service_name)
-		return "Customer Service " + customer_service_name + " has been removed from the queue" + "\n"
-	return "Customer Service " + customer_service_name + " wasn't found in the queue" + "\n"
+	micado_master_ip = experiment_json.get("micado_ip")
+	app_id = experiment_json.get("image_url").split("/")[0]
 
-# Quick prepare tosca
-def prep_tosca(private_id):
-	service_name = "jq_test_slim__" + private_id
-	server_ip = urllib.request.urlopen('https://api.ipify.org').read().decode('utf8')
+	url = 'https://admin:admin@' + micado_master_ip + \
+		  ':443/toscasubmitter/v1.0/app/undeploy/' + app_id
 
-	with open("tosca.yaml", 'w') as newfile:
-		with open ("/etc/jqueuer/tosca/jq-tosca.yaml") as template:
-			for line in template:
-				if 'JQUEUER_IP' in line:
-					newfile.write(line.replace("JQUEUER_IP", server_ip))
-					continue
-				elif 'EXPID' in line:
-					newfile.write(line.replace("EXPID", 'exp_'+private_id))
-					continue
-				newfile.write(line.replace("repast__experiment", service_name))
+	r = requests.delete(url, verify=False)
+	backend_experiment_db.flushall()
+	return app_id + " and its infrastructure have been removed ! \n"
+	#customer_service_name = experiment_json['service_name']
+	#if (backend_experiment_db.exists(customer_service_name)):
+	#	backend_experiment_db.delete(customer_service_name)
+	#	return "Customer Service " + customer_service_name + " has been removed from the queue" + "\n"
+	#return "Customer Service " + customer_service_name + " wasn't found in the queue" + "\n"
 
-def submit_tosca():
+# Prepare tosca
+def do_tosca(private_id, data_json):
+	app_id, app_name = data_json.get("image_url").split("/")
+	service_name = app_name.replace("/","_").replace(":","_").replace(".","_").replace("-","_") + "__" + private_id
+	jq_server_ip = urllib.request.urlopen('https://api.ipify.org').read().decode('utf8')
+	micado_master_ip = data_json.get("micado_ip")
+
+	manual_entries = {"JQUEUER_IP": jq_server_ip,
+					  "EXPID": 'exp_' + private_id,
+					  "SERVICE_NAME": service_name}
+
+	jqtosca = totosca.template.Template(data_json, manual_entries)
+	jqtosca.maketosca("tosca.yaml")
+
 	url = 'https://admin:admin@' + micado_master_ip + ':443/toscasubmitter/v1.0/app/launch/file/'
 	files = {'file': open('tosca.yaml','rb')}
-	data = {'id': 'jaydes'}
+	data = {'id': app_id}
 
 	r = requests.post(url, files=files, data=data, verify=False)
 
@@ -75,7 +82,7 @@ class HTTP(BaseHTTPRequestHandler):
 		# Processing POST requests
 		content_length= None
 		data_json = None
-		data =None
+		data = None
 		try:
 			content_length = int(self.headers['Content-Length']) # <--- Gets the size of data
 			data = self.rfile.read(int(content_length)).decode('utf-8')
@@ -96,9 +103,11 @@ class HTTP(BaseHTTPRequestHandler):
 			html_file.close()
 			data_back = "received"
 		if (self.path == '/experiment/add'):
-			data_back = add_experiment(data_json)
-			prep_tosca(data_back[4:21])
-			submit_tosca()
+			if data_json.get("micado_ip"):
+				data_back = add_experiment(data_json)
+				do_tosca(data_back[4:21], data_json)
+			else:
+				data_back = 'Please specify a "micado_ip" in your .json'
 		elif (self.path == '/experiment/del'):
 			data_back = del_experiment(data_json)
 
