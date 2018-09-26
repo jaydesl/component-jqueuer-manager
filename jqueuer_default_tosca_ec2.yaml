@@ -34,7 +34,7 @@ topology_template:
          deploy:
            resources:
              reservations:
-               cpus: <CPU>
+               cpus: "<CPU>"
          stop_grace_period: 1m30s
          tty: true
          networks: [ 'bridge' ]
@@ -45,19 +45,19 @@ topology_template:
          repository: docker_hub
 
     worker_node:
-      type: tosca.nodes.MiCADO.Occopus.CloudSigma.Compute
+      type: tosca.nodes.MiCADO.Occopus.EC2.Compute
       properties:
         cloud:
-          interface_cloud: cloudsigma
-          endpoint_cloud: https://zrh.cloudsigma.com/api/2.0
+          interface_cloud: ec2
+          endpoint_cloud: https://ec2.eu-west-2.amazonaws.com
       capabilities:
         host:
           properties:
-            num_cpus: 4000
-            mem_size: 4294967296
-            vnc_password: secret
-            libdrive_id: 837e9690-d1ae-4ad7-a7fb-895fabe88ec5
-            public_key_id: <PUB_KEY_ID>
+            region_name: eu-west-2
+            image_id: ami-061a2d878e5754b62
+            instance_type: t2.medium
+            key_name: <PUB_KEY_ID>
+            security_group_ids: [ sg-440d612c ]
     bridge:
       type: tosca.nodes.MiCADO.network.Network.Docker
       properties:
@@ -73,7 +73,7 @@ topology_template:
           constants:
             AET: <DURATION>
             TTC: <DEADLINE>
-            MAXNODES: 2
+            MAXNODES: 6
             MAXCONTAINERS: <MAXCONTAINERS>
           queries:
             TIMENOW: 'time()'
@@ -92,11 +92,11 @@ topology_template:
               ITEMS -= COMPLETED
             if ITEMS>0:
               reqconts = min(MAXCONTAINERS, ceil(AET/(REMAININGTIME/ITEMS))) if REMAININGTIME>AET else min(ITEMS, MAXCONTAINERS)
-              reqnodes = ceil(reqconts/6)
-              if reqnodes<m_node_count:
-                m_node_count-=1
-              if reqnodes>m_node_count:
-                m_node_count+=1
+              reqnodes = ceil(reqconts/4)
+              if reqnodes>m_node_count and m_time_since_node_count_changed>60:
+                m_node_count = min(reqnodes, MAXNODES)
+              if reqnodes<m_node_count-1 and m_time_since_node_count_changed>60:
+                m_node_count = max(1, reqnodes)
             else:
               m_node_count = 0
             print "Number of required nodes:",reqnodes
@@ -119,7 +119,8 @@ topology_template:
             required_count = 0
             if ITEMS>0:
               required_count = min(MAXCONTAINERS, ceil(AET/(REMAININGTIME/ITEMS))) if REMAININGTIME>AET else min(ITEMS, MAXCONTAINERS)
-              m_container_count = min(required_count, len(m_nodes) * 6)
+              if required_count<m_container_count-2 or required_count>m_container_count:
+                m_container_count = min(required_count, len(m_nodes) * 4)
             else:
               m_container_count = 0
             print "Number of required containers:",required_count
