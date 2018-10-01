@@ -41,6 +41,7 @@ backend_experiment_db = redis.StrictRedis(
 	host=backend_server,
 	port=backend_port,
 	db=backend_experiment_db_id,
+	password='b4sic',
 	charset="utf-8",
 	decode_responses=True
 	)
