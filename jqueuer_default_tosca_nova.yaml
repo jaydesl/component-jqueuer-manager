@@ -34,7 +34,7 @@ topology_template:
          deploy:
            resources:
              reservations:
-               cpus: <CPU>
+               cpus: "<CPU>"
          stop_grace_period: 1m30s
          tty: true
          networks: [ 'bridge' ]
@@ -45,19 +45,21 @@ topology_template:
          repository: docker_hub
 
     worker_node:
-      type: tosca.nodes.MiCADO.Occopus.CloudSigma.Compute
+      type: tosca.nodes.MiCADO.Occopus.Nova.Compute
       properties:
         cloud:
-          interface_cloud: cloudsigma
-          endpoint_cloud: https://zrh.cloudsigma.com/api/2.0
+          interface_cloud: nova
+          endpoint_cloud: https://cloud.ecs.westminster.ac.uk:5000/v3/
       capabilities:
         host:
           properties:
-            num_cpus: 4000
-            mem_size: 4294967296
-            vnc_password: secret
-            libdrive_id: 837e9690-d1ae-4ad7-a7fb-895fabe88ec5
-            public_key_id: <PUB_KEY_ID>
+            image_id: c8eea877-cd5a-4351-b5c9-f0e93a416a86
+            flavor_name: m1.medium
+            project_id: 75e3d2ba0c724c22bcd53c4a708467d7
+            network_id: e2d22d43-e378-44ad-876f-97d5479f3b51
+            key_name: j_key
+            security_groups:
+              - 1fe440c9-f324-411b-b404-e9dd353ce8f5
     bridge:
       type: tosca.nodes.MiCADO.network.Network.Docker
       properties:
@@ -77,7 +79,8 @@ topology_template:
             MAXCONTAINERS: <MAXCONTAINERS>
           queries:
             TIMENOW: 'time()'
-            START: 'jqueuer_experiment_adding_timestamp{experiment_id="<EXPID>"}'
+            JOBSRUN: 'count(jqueuer_job_running{experiment_id="<EXPID>"} == 1)'
+            START: '(TTC+(jqueuer_experiment_adding_timestamp{experiment_id="<EXPID>"})-time())'
             ITEMS: 'count(jqueuer_job_added{experiment_id="<EXPID>"})'
             COMPLETED: 'count(jqueuer_task_accomplished{experiment_id="<EXPID>"} == 1)'
             CALC_AET: 'AVG(jqueuer_task_accomplished_duration{experiment_id="<EXPID>"})'
@@ -88,10 +91,13 @@ topology_template:
             REMAININGTIME = START+TTC-TIMENOW
             if CALC_AET:
               AET = CALC_AET
-            if COMPLETED:
               ITEMS -= COMPLETED
-            if ITEMS>0:
-              reqconts = min(MAXCONTAINERS, ceil(AET/(REMAININGTIME/ITEMS))) if REMAININGTIME>AET else min(ITEMS, MAXCONTAINERS)
+            if ITEMS<=JOBSRUN:
+              pass
+            elif ITEMS>0:
+              reqconts = min(MAXCONTAINERS, ceil(AET/(REMAININGTIME/(ITEMS+JOBSRUN/2))))
+              if REMAININGTIME<AET+AET*1.10:
+                reqconts = min(max(m_container_count, reqconts), MAXCONTAINERS)
               reqnodes = ceil(reqconts/4)
               if reqnodes>m_node_count and m_time_since_node_count_changed>60:
                 m_node_count = min(reqnodes, MAXNODES)
@@ -101,6 +107,7 @@ topology_template:
               m_node_count = 0
             print "Number of required nodes:",reqnodes
             print "Number of requested nodes:",m_node_count
+
     - scalability:
         type: tosca.policies.Scaling.MiCADO
         targets: [ <SERVICE_NAME> ]
@@ -118,8 +125,10 @@ topology_template:
             print "Length of queue:",ITEMS
             required_count = 0
             if ITEMS>0:
-              required_count = min(MAXCONTAINERS, ceil(AET/(REMAININGTIME/ITEMS))) if REMAININGTIME>AET else min(ITEMS, MAXCONTAINERS)
-              if required_count<m_container_count-2 or required_count>m_container_count:
+              required_count = min(MAXCONTAINERS, ceil(AET/(REMAININGTIME/(ITEMS+JOBSRUN/2))))
+              if REMAININGTIME<AET+AET*1.10:
+                required_count = min(max(m_container_count, required_count), MAXCONTAINERS)
+              if required_count<m_container_count-3 or required_count>m_container_count:
                 m_container_count = min(required_count, len(m_nodes) * 4)
             else:
               m_container_count = 0

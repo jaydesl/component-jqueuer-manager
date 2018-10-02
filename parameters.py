@@ -31,24 +31,25 @@ def broker():
 
 # Redis Backend configuration
 import redis
-backend_protocol 			= 	'redis'
-backend_server	 			=	'redis'
-backend_port     			=	6379
-backend_db		 			=	0
-backend_experiment_db_id	=	10
+backend_password                        =       'b4sic'
+backend_protocol                        =       'redis'
+backend_server                          =       'redis'
+backend_port                            =       6379
+backend_db                                      =       0
+backend_experiment_db_id        =       10
 
 backend_experiment_db = redis.StrictRedis(
-	host=backend_server,
-	port=backend_port,
-	db=backend_experiment_db_id,
-	password='b4sic',
-	charset="utf-8",
-	decode_responses=True
-	)
+        host=backend_server,
+        port=backend_port,
+        db=backend_experiment_db_id,
+        password=backend_password,
+        charset="utf-8",
+        decode_responses=True
+        )
 
 def backend(db):
-	backend = backend_protocol + '://' + backend_server + ':' + str(backend_port) + '/' + str(db)
-	return backend
+        backend = backend_protocol + '://:' + backend_password + '@' + backend_server + ':' + str(backend_port) + '/' + str(db)
+        return backend
 
 
 

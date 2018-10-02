@@ -77,7 +77,8 @@ topology_template:
             MAXCONTAINERS: <MAXCONTAINERS>
           queries:
             TIMENOW: 'time()'
-            START: 'jqueuer_experiment_adding_timestamp{experiment_id="<EXPID>"}'
+            JOBSRUN: 'count(jqueuer_job_running{experiment_id="<EXPID>"} == 1)'
+            START: jqueuer_experiment_adding_timestamp{experiment_id="<EXPID>"}+TTC-time()
             ITEMS: 'count(jqueuer_job_added{experiment_id="<EXPID>"})'
             COMPLETED: 'count(jqueuer_task_accomplished{experiment_id="<EXPID>"} == 1)'
             CALC_AET: 'AVG(jqueuer_task_accomplished_duration{experiment_id="<EXPID>"})'
@@ -91,7 +92,9 @@ topology_template:
             if COMPLETED:
               ITEMS -= COMPLETED
             if ITEMS>0:
-              reqconts = min(MAXCONTAINERS, ceil(AET/(REMAININGTIME/ITEMS))) if REMAININGTIME>AET else min(ITEMS, MAXCONTAINERS)
+              reqconts = min(MAXCONTAINERS, ceil(AET/(REMAININGTIME/(ITEMS+JOBSRUN/2))))
+              if REMAININGTIME<AET+AET*1.10:
+                reqconts = min(max(m_container_count, reqconts), MAXCONTAINERS)
               reqnodes = ceil(reqconts/4)
               if reqnodes>m_node_count and m_time_since_node_count_changed>60:
                 m_node_count = min(reqnodes, MAXNODES)
@@ -101,6 +104,7 @@ topology_template:
               m_node_count = 0
             print "Number of required nodes:",reqnodes
             print "Number of requested nodes:",m_node_count
+
     - scalability:
         type: tosca.policies.Scaling.MiCADO
         targets: [ <SERVICE_NAME> ]
@@ -118,8 +122,10 @@ topology_template:
             print "Length of queue:",ITEMS
             required_count = 0
             if ITEMS>0:
-              required_count = min(MAXCONTAINERS, ceil(AET/(REMAININGTIME/ITEMS))) if REMAININGTIME>AET else min(ITEMS, MAXCONTAINERS)
-              if required_count<m_container_count-2 or required_count>m_container_count:
+              required_count = min(MAXCONTAINERS, ceil(AET/(REMAININGTIME/(ITEMS+JOBSRUN/2))))
+              if REMAININGTIME<AET+AET*1.10:
+                required_count = min(max(m_container_count, required_count), MAXCONTAINERS)
+              if required_count<m_container_count-3 or required_count>m_container_count:
                 m_container_count = min(required_count, len(m_nodes) * 4)
             else:
               m_container_count = 0
