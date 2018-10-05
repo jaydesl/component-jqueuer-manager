@@ -25,7 +25,7 @@ topology_template:
       artifacts:
        image:
          type: tosca.artifacts.Deployment.Image.Container.Docker
-         file: jaydes/jqueuer_agent:0.3.2
+         file: jaydes/jqueuer_agent:sleep
          repository: docker_hub
 
     <SERVICE_NAME>:
@@ -34,8 +34,8 @@ topology_template:
          deploy:
            resources:
              reservations:
-               cpus: "<CPU>"
-         stop_grace_period: 1m30s
+               cpus: "<RES_CPU>"
+         stop_grace_period: "<DURATION>s"
          tty: true
          networks: [ 'bridge' ]
       artifacts:
@@ -53,8 +53,8 @@ topology_template:
       capabilities:
         host:
           properties:
-            num_cpus: 4000
-            mem_size: 4294967296
+            num_cpus: <WORK_CPU>
+            mem_size: <WORK_MEM>
             vnc_password: secret
             libdrive_id: 837e9690-d1ae-4ad7-a7fb-895fabe88ec5
             public_key_id: <PUB_KEY_ID>
@@ -73,8 +73,8 @@ topology_template:
           constants:
             AET: <DURATION>
             TTC: <DEADLINE>
-            MAXNODES: 10
-            MAXCONTAINERS: <MAXCONTAINERS>
+            MAXNODES: <NODES_MAX>
+            MAXCONTAINERS: <CONTAINERS_PER> * <NODES_MAX>
           queries:
             TIMENOW: 'time()'
             FIRSTJOB: 'min(jqueuer_job_running_timestamp{experiment_id="<EXPID>"})'
@@ -100,7 +100,7 @@ topology_template:
             if ITEMS>0 and ITEMS<=JOBSRUN:
               m_node_count = m_node_count
             elif ITEMS>0:
-              reqconts = min(MAXCONTAINERS, ceil(AET/((REMAININGTIME+AET*0.20)/ITEMS)))
+              reqconts = min(MAXCONTAINERS, ceil(AET/((REMAININGTIME-AET*0.20)/ITEMS)))
               reqnodes = ceil(reqconts/4)
               if reqnodes>m_node_count:
                 m_node_count = min(reqnodes, MAXNODES)
@@ -136,7 +136,7 @@ topology_template:
             if ITEMS>0 and ITEMS<=JOBSRUN:
               m_container_count = m_container_count
             elif ITEMS>0:
-              required_count = min(MAXCONTAINERS, ceil(AET/((REMAININGTIME+AET*0.20)/ITEMS)))
+              required_count = min(MAXCONTAINERS, ceil(AET/((REMAININGTIME-AET*0.20)/ITEMS)))
               if REMAININGTIME>AET*1.5:
                 if required_count<m_container_count-3:
                   m_container_count = min(required_count, len(m_nodes) * 4)
