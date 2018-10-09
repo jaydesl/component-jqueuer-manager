@@ -74,7 +74,7 @@ topology_template:
             AET: <DURATION>
             TTC: <DEADLINE>
             MAXNODES: <NODES_MAX>
-            MAXCONTAINERS: <CONTAINERS_PER> * <NODES_MAX>
+            MAXCONTAINERS: <CONTAINERS_MAX>
           queries:
             TIMENOW: 'time()'
             FIRSTJOB: 'min(jqueuer_job_running_timestamp{experiment_id="<EXPID>"})'
