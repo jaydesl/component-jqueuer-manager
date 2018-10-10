@@ -100,7 +100,7 @@ topology_template:
             if ITEMS>0 and ITEMS<=JOBSRUN:
               m_node_count = m_node_count
             elif ITEMS>0:
-              reqconts = min(MAXCONTAINERS, ceil(AET/((REMAININGTIME-AET*0.20)/ITEMS)))
+              reqconts = max(ITEMS, min(MAXCONTAINERS, ceil(AET/((REMAININGTIME-AET*0.20)/ITEMS))))
               reqnodes = ceil(reqconts/4)
               if reqnodes>m_node_count:
                 m_node_count = min(reqnodes, MAXNODES)
@@ -136,7 +136,7 @@ topology_template:
             if ITEMS>0 and ITEMS<=JOBSRUN:
               m_container_count = m_container_count
             elif ITEMS>0:
-              required_count = min(MAXCONTAINERS, ceil(AET/((REMAININGTIME-AET*0.20)/ITEMS)))
+              required_count = max(ITEMS, min(MAXCONTAINERS, ceil(AET/((REMAININGTIME-AET*0.20)/ITEMS))))
               if REMAININGTIME>AET*1.5:
                 if required_count<m_container_count-3:
                   m_container_count = min(required_count, len(m_nodes) * 4)

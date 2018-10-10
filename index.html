@@ -1,14 +1,14 @@
 <!DOCTYPE html>
 <html>
 <body>
-<h2>MiCADO V4</h2>
+<h2>jQueuer for MiCADOv0.6.x</h2>
 <p id="Server"></p>
 
 <h3>Experiment JSON:</h3>
 <input type="file" id="data" />
 <br>
 <button onclick="myFunction()" id="send">Add Experiment</button>
-<button onclick="delEx()" id="send">Kill Experiment</button>
+<button onclick="delEx()" id="kill">Kill Experiment</button>
 <p>-------------------------------- Response ----------------------</p>
 <pre id="response" style="width: 50%; overflow: auto; padding: 4px; margin-left: 2em; font-size: 1.1em;"></pre>
 <p>------------------------------------------------------------------</p>
@@ -45,6 +45,8 @@ function delEx() {
     	}
 	};
 	xhr.send(element.textContent);
+	var kill_button = document.getElementById('kill');
+	kill_button.disabled = true
 }
 
 function myFunction() {
