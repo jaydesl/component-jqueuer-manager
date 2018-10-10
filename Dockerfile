@@ -17,4 +17,5 @@ WORKDIR /jqueuer_manager/
 RUN mkdir log
 RUN mkdir data
 RUN pip install -r requirements.txt
+COPY pidbox.py /usr/local/lib/python3.6/site-packages/kombu/
 ENTRYPOINT python3 jqueuer_manager.py
