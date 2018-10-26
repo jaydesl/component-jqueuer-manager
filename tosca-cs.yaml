@@ -34,7 +34,7 @@ topology_template:
          deploy:
            resources:
              reservations:
-               cpus: "{{ (([1,(worker_cpu/1000/2)|round(0, 'floor')]|max)/containers_per)|round(2, 'floor') }}"
+               cpus: "{{ (([1,(worker_cpu|int/1000/2)|round(0, 'floor')]|max)/containers_per|int)|round(2, 'floor') }}"
          stop_grace_period: "{{ single_task_duration }}s"
          tty: true
          networks: [ 'bridge' ]
